@@ -1,0 +1,196 @@
+Program.Sub.ScreenSU.Start
+
+Gui.Form1..Create
+Gui.Form1..Caption("Form1")
+Gui.Form1..Size(9600,6375)
+Gui.Form1..Position(0,0)
+Gui.Form1..AlwaysOnTop(False)
+Gui.Form1..FontName("Arial")
+Gui.Form1..FontSize(8)
+Gui.Form1..ForeColor(0)
+Gui.Form1..Backcolor(-2147483633)
+Gui.Form1..ControlBox(True)
+Gui.Form1..MaxButton(True)
+Gui.Form1..MinButton(True)
+Gui.Form1..MousePointer(0)
+Gui.Form1..Moveable(True)
+Gui.Form1..Sizeable(True)
+Gui.Form1..ShowInTaskBar(True)
+Gui.Form1..TitleBar(True)
+
+
+Gui.Form1.txt1.Create(textbox)
+Gui.Form1.txt1.Text("")
+Gui.Form1.txt1.Visible(True)
+Gui.Form1.txt1.Size(1215,300)
+Gui.Form1.txt1.Zorder(0)
+Gui.Form1.txt1.Position(200,200)
+Gui.Form1.txt1.Enabled(True)
+Gui.Form1.txt1.Alignment(0)
+Gui.Form1.txt1.FontName("Arial")
+Gui.Form1.txt1.FontSize(8)
+Gui.Form1.txt1.Backcolor(-2147483643)
+Gui.Form1.txt1.BorderStyle(1)
+Gui.Form1.txt1.TabStop(True)
+Gui.Form1.txt1.TabIndex(0)
+Gui.Form1.txt1.Tooltip("")
+Gui.Form1.txt1.ControlGroup(0)
+Gui.Form1.txt1.DefaultValue("")
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Variable.UDT.uBook.Define("Ord",String,"ORDER_NUMBER")
+Variable.UDT.uBook.Define("Rec",String,"ORDER_LINE")
+Variable.UDT.uBook.Define("Date",String,"ORDER_DATE")
+Variable.UDT.uBook.Define("Part",String,"PART_NO")
+Variable.UDT.uBook.Define("PL",String,"PL")
+Variable.UDT.uBook.Define("Qty",Float,"QTY")
+Variable.UDT.uBook.Define("Amount",Float,"AMOUNT")
+Variable.UDT.uBook.Define("Cust",String,"CUST_NUMBER")
+Variable.UDT.uBook.Define("CName",String,"CUST_NAME")
+Variable.UDT.uBook.Define("SM",String,"SALESMAN_NUMBER")
+Variable.UDT.uBook.Define("Act",String,"BOOK_ACTION")
+Variable.uGlobal.uBook.Declare("uBook")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by: MLA
+'Project Start Date: 12/7/2010
+'Notes:
+'  Fast Houston
+Gui.Form1..Show
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.Control.CallSub(Loadrec)
+F.Intrinsic.Control.CallSub(Exportrec)
+F.Intrinsic.Control.CallSub(Unload)
+
+Program.Sub.Main.End
+
+Program.Sub.LoadRec.Start
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+V.Local.iCt.Declare(Long)
+V.Local.iUB.Declare(Long)
+V.Local.sParam.Declare(String)
+V.Local.sSM.Declare(String)
+V.Local.iMod.Declare(Long)
+
+F.Intrinsic.Control.SetErrorHandler("LoadRec_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sParam.Set("000000!*!999999!*!B!*!Y!*!0!*!0")
+F.Global.General.CallWrapperSync(910040,V.Local.sParam)
+
+
+F.Intrinsic.String.Concat("Select ORDER_NUMBER, ORDER_LINE, CUST_NUMBER, SALESMAN_NUMBER, PART_NO, PL, CUST_NAME, BOOK_ACTION, ORDER_DATE, QTY, AMOUNT from V_BI_EXSUM_BOOK where TRMNL = '",V.Caller.Terminal,"'",V.Local.sSql)
+F.ODBC.Connection!con.OpenRecordsetRO("rst",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,"True")
+	F.ODBC.con!rst.Close
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.Else
+	f.Intrinsic.Variable.LoadUDTFromRecordset("con","rst","uGlobal.uBook","false")
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rst.Close
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("LoadRec_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.LoadRec.End
+
+Program.Sub.Unload.Start
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+Program.Sub.Unload.End
+
+Program.Sub.ExportRec.Start
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.iRet.Declare(Long)
+V.Local.i.Declare(Long)
+V.Local.sEApp.Declare(String)
+V.Local.sEWrkBk.Declare(String)
+V.Local.sEWrkSht.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.iRow.Declare(Long)
+V.Local.iMod.Declare(Long)
+V.Local.sSM.Declare(String)
+V.Local.iHndl.Declare(Long)
+V.Local.sFileTxt.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("ExportRec_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sEApp.Set("MSExcel")
+V.Local.sEWrkBk.Set("MSEWrkBk")
+
+F.ODBC.Connection!con.OpenRecordsetRO("rst","Select * from ATG_3202_SLSPRSN_FLG")
+F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,"True")
+	F.ODBC.con!rst.Close
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.DoUntil(V.ODBC.con!rst.EOF,=,"True")
+		V.Local.sRet.Set("")
+		V.Local.sRet.Redim(0,0)
+		V.Local.sFileTxt.Set("")
+		F.Intrinsic.Control.If(V.ODBC.con!rst.FieldValLong!MANAGER,=,0)
+			V.Local.sSM.Set(V.ODBC.con!rst.FieldValLTrim!SALESPERSON)
+			F.Intrinsic.Variable.UDTSeek(V.uGlobal.uBook!SM,V.Local.sSM,0,V.Local.sRet)
+			F.Intrinsic.Control.If(V.Local.sRet,=,"")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.File.GetHandle(V.Local.iHndl)
+				F.Intrinsic.String.Concat("c:\",V.ODBC.con!rst.FieldValLTrim!SALESPERSON,"_Order_Bookings.csv",V.Local.sFile)
+				F.Intrinsic.File.OpenForAppend(V.Local.sFile,V.Local.iHndl)
+				F.Intrinsic.String.Concat("Order Number",",","Order Line",",","Date Added",",","Part Number",",","P/L",",","Quantity",",","Amount",",","Customer",",","Customer Name",",","SM",",","Action",V.Ambient.NewLine,V.Local.sEWrkSht)
+				F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+				F.Intrinsic.Control.For(V.Local.i,V.Local.sRet.LBound,V.Local.sRet.UBound,1)
+					V.Local.iRet.Set(V.Local.sRet(V.Local.i))
+					F.Intrinsic.String.Concat(V.Local.sEWrkSht,",",V.uGlobal.uBook(V.Local.iRet)!Ord,",",V.uGlobal.uBook(V.Local.iRet)!Rec,",",V.uGlobal.uBook(V.Local.iRet)!Date,",",V.uGlobal.uBook(V.Local.iRet)!Part,",",V.uGlobal.uBook(V.Local.iRet)!PL,",",V.Local.sEWrkSht)
+					F.Intrinsic.String.Concat(V.Local.sEWrkSht,V.uGlobal.uBook(V.Local.iRet)!Qty,",",V.uGlobal.uBook(V.Local.iRet)!Amount,",",V.uGlobal.uBook(V.Local.iRet)!Cust,",",V.uGlobal.uBook(V.Local.iRet)!CName,",",V.Local.sEWrkSht)
+					F.Intrinsic.String.Concat(V.Local.sEWrkSht,V.uGlobal.uBook(V.Local.iRet)!SM,",",V.uGlobal.uBook(V.Local.iRet)!Act,V.Ambient.NewLine,V.Local.sFileTxt)
+				F.Intrinsic.Control.Next(V.Local.i)
+				F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sFileTxt)
+				F.Intrinsic.File.CloseFile(V.Local.iHndl)
+				F.Global.Messaging.CreateEMMessage(V.ODBC.con!rst.FieldValLTrim!EMAIL,V.ODBC.con!rst.FieldValLTrim!SALESPERSON,"dennis.bretherton@fast-houston.com","Dennis Bretherton","Order Bookings","",V.Local.sFile,True)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.File.GetHandle(V.Local.iHndl)
+			F.Intrinsic.String.Concat("c:\",V.ODBC.con!rst.FieldValLTrim!SALESPERSON,"_Order_Bookings.csv",V.Local.sFile)
+			F.Intrinsic.File.OpenForAppend(V.Local.sFile,V.Local.iHndl)
+			F.Intrinsic.String.Concat("Order Number",",","Order Line",",","Date Added",",","Part Number",",","P/L",",","Quantity",",","Amount",",","Customer",",","Customer Name",",","SM",",","Action",V.Local.sEWrkSht)
+			F.Intrinsic.File.WriteLine(V.Local.iHndl,V.Local.sEWrkSht)
+			F.Intrinsic.Control.For(V.Local.i,V.uGlobal.uBook.LBound,V.uGlobal.uBook.UBound,1)
+				Gui.Form1.txt1.Text(V.Local.i)
+				F.Intrinsic.String.Concat(V.Local.sFileTxt,",",V.uGlobal.uBook(V.Local.i)!Ord,",",V.uGlobal.uBook(V.Local.i)!Rec,",",V.uGlobal.uBook(V.Local.i)!Date,",",V.uGlobal.uBook(V.Local.i)!Part,",",V.uGlobal.uBook(V.Local.i)!PL,",",V.uGlobal.uBook(V.Local.i)!Qty,",",V.uGlobal.uBook(V.Local.i)!Amount,",",V.uGlobal.uBook(V.Local.i)!Cust,",",V.uGlobal.uBook(V.Local.i)!CName,",",V.uGlobal.uBook(V.Local.i)!SM,",",V.uGlobal.uBook(V.Local.i)!Act,V.Ambient.NewLine,V.Local.sFileTxt)
+			F.Intrinsic.Control.Next(V.Local.i)
+			F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sFileTxt)
+			F.Intrinsic.File.CloseFile(V.Local.iHndl)
+			F.Global.Messaging.CreateEMMessage(V.ODBC.con!rst.FieldValLTrim!EMAIL,V.ODBC.con!rst.FieldValLTrim!SALESPERSON,"dennis.bretherton@fast-houston.com","Dennis Bretherton","Order Bookings","",V.Local.sFile,True)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rst.MoveNext
+	F.Intrinsic.Control.Loop
+F.Intrinsic.Control.EndIf
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("ExportRec_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+F.Intrinsic.Debug.Stop
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.ExportRec.End
+
+
+
+Program.Sub.Comments.Start
+${$0$}$$}$$}$12:00:00 AM$}$False
+Program.Sub.Comments.End
